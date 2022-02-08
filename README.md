@@ -1,6 +1,6 @@
 # eval-chi-paris-data-processing
 
-This repository contains the data and necessary scripts needed to generate the observational data and run the model used in the paper, [].
+This repository contains the data and necessary scripts needed to generate the observational data and run the model used in the paper, Machine Learning Model Evaluation for Estimating Submicron Aerosol Mixing State at the Global Scale.
 Make sure you have Python 3 installed. You can then ensure that you have all necessary packages installed by running
 ```
 pip install -r requirements.txt
