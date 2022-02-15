@@ -5,6 +5,7 @@ Make sure you have Python 3 installed. You can then ensure that you have all nec
 ```
 pip install -r requirements.txt
 ```
+In any of the following commands, you can choose to not provide an output filename, the program will simply use a default output filename.
 # **How to Generate the Observational Dataset**
 Simply run
 ```
@@ -17,9 +18,10 @@ Assuming you have generated training data in a singular CSV file, you can run tr
 ```
 python model.py path_to_training_data your_validation_output_name.csv your_testing_output_name.csv
 ```
+
 If you wish to run hyperparameter tuning yourself instead of using the values we found, you can do so with the -h option, so the command would be
 ```
-python model.py path_to_training_data your_validation_output_name.csv your_testing_output_name.csv
+python -h model.py path_to_training_data your_validation_output_name.csv your_testing_output_name.csv
 ```
 To evaluate the results, simply run 
 ```
