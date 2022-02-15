@@ -22,7 +22,7 @@ warnings.simplefilter('ignore')
 def hyper_tune(x_train, y_train, n_iter):
     sys.stdout.flush()
     print('Begin hypertuning')
-    return 0.0123748445508538, 1088, 8
+
     s_lr = 0.01
     e_lr = 0.04
     s_n = 1050
@@ -111,7 +111,12 @@ def feat_imp(XGBreg):
     for res in results:
         print(res + ": " + str(results[res]) + "%")
 
-def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, time_label):
+def usage():
+    usage_str = 'Usage: python model.py path_to_training_data path_to_validation_data path_to_testing_data [-h] [-ov your_validation_output_name.csv] [-ot your_testing_output_name.csv]'
+    print(usage_str)
+    sys.exit()
+
+def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, time_label, is_tune, val_outfile, test_outfile):
 
     param_grid = para_dict
     XGBreg = XGBRegressor(objective='reg:squarederror', n_jobs=36)
@@ -129,9 +134,11 @@ def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, t
     kfold = model_selection.KFold(n_splits=10, random_state=7)
 
     '''
-
-    learning_rate_bayes, n_estimators_bayes, max_depth_bayes = hyper_tune(
-        X_train, y_train, n_iter=128)
+    learning_rate_bayes = 0.0123748445508538
+    n_estimators_bayes = 1088
+    max_depth_bayes = 8
+    if(is_tune):
+        learning_rate_bayes, n_estimators_bayes, max_depth_bayes = hyper_tune(X_train, y_train, n_iter=128)
 
     # Get the models
     XGBreg = XGBRegressor(objective='reg:squarederror',
@@ -161,8 +168,8 @@ def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, t
     df_predictions = XGBreg.predict(X_validate)
     print('Ran model on validation set')
 
-    
-    f_val = open("3_validation_res_800_3.txt", "w+")
+    #val_outfile = "3_validation_res_800_3.txt"
+    f_val = open(val_outfile, "w+")
     f_val.write("Validation predictions\n")
     for entr in df_predictions:
         f_val.write(str(entr) + "\n")
@@ -221,7 +228,8 @@ def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, t
     colors = ["red", "blue"]
     colormap = clr.ListedColormap(colors)
 
-    f_test = open("POST_P__test_res_800_3.txt", "w+")
+    #test_outfile = "POST_P__test_res_800_3.txt"
+    f_test = open(test_outfile, "w+")
     f_test.write("Testing predictions\n")
     for col_pred in df_pred_collection:
         for entr in col_pred:
@@ -241,7 +249,81 @@ def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, t
 
 
 
-def main():
+def main(argv):
+
+    val_outfile = "VALIDATION_OUTPUT.txt"
+    test_outfile = "TESTING_OUTPUT.txt"
+    training_data_file = ""
+    testing_data_file = ""
+    validation_data_file = ""
+    is_tune = False
+
+    if(len(sys.argv) < 4 or len(sys.argv) > 9):
+        usage()
+
+    if(len(sys.argv) == 4):
+        training_data_file = str(sys.argv[1])
+        validation_data_file = str(sys.argv[2])
+        testing_data_file = str(sys.argv[3])
+
+    if(len(sys.argv) == 5):
+        training_data_file = str(sys.argv[1])
+        validation_data_file = str(sys.argv[2])
+        testing_data_file = str(sys.argv[3])
+        if(sys.argv[4] != '-h'):
+            usage()
+        is_tune = True
+
+    if(len(sys.argv) == 6):
+        if('-h' in sys.argv):
+            usage()
+        if(sys.argv[4] not in ['-ov','-ot']):
+            usage()
+        if(sys.argv[4] == '-ov'):
+            val_outfile = sys.argv[4]
+        else:
+            test_outfile = sys.argv[4]
+
+    if(len(sys.argv) == 8):
+        if('-h' in sys.argv):
+            usage()
+        if(sys.argv[4] not in ['-ov','-ot'] or sys.argv[6] not in ['-ov','-ot']):
+            usage()
+
+        if(sys.argv[4] == '-ov'):
+            val_outfile = sys.argv[4]
+            test_outfile = sys.argv[6]
+        else:
+            test_outfile = sys.argv[4]
+            val_outfile = sys.argv[6]
+
+    if(len(sys.argv) == 7):
+        if(sys.argv[4] != '-h'):
+            usage()
+        is_tune = True
+
+        if(sys.argv[5] not in ['-ov','-ot']):
+            usage()
+
+        if(sys.argv[5] == '-ov'):
+            val_outfile = sys.argv[5]
+        else:
+            test_outfile = sys.argv[5]
+
+    if(len(sys.argv) == 9):
+        if(sys.argv[4] != '-h'):
+            usage()
+        is_tune = True
+
+        if(sys.argv[5] not in ['-ov','-ot'] or sys.argv[7] not in ['-ov','-ot']):
+            usage()
+
+        if(sys.argv[5] == '-ov'):
+            val_outfile = sys.argv[5]
+            test_outfile = sys.argv[7]
+        else:
+            test_outfile = sys.argv[5]
+            val_outfile = sys.argv[7]
     
     vari = ["O3_SRF", "NO_SRF", "NOX_SRF", "CO_SRF",
             "C2H6_SRF", "ETH_SRF", "OLET_SRF", "PAR_SRF", "TOL_SRF", "XYL_SRF", "CH3OH_SRF",
@@ -253,13 +335,18 @@ def main():
 
     pred = "chi_abd"
 
-    df_test_ori = pd.read_csv("../data/test_fixed_v6.csv")
+    #training_data_file = "../data/train_v20_800.csv"
+    #validation_data_file = "../data/test_v20_model_400.csv"
+    #testing_data_file = "../data/test_fixed_v6.csv"
 
-    df_validate_ori = pd.read_csv("../data/test_v20_model_400.csv")
+    df_test_ori = pd.read_csv(testing_data_file)
 
-    df_train_ori = pd.read_csv("../data/train_v20_800.csv")
+    df_validate_ori = pd.read_csv(validation_data_file)
+
+    df_train_ori = pd.read_csv(training_data_file)
+
     ml_workflow_grid_search(df_train=df_train_ori.dropna(), df_validate=df_validate_ori.dropna(), df_test=df_test_ori.dropna(),
-                            features_ls=vari, pred=pred, time_label=df_test_ori.dropna()["Time"])
+                            features_ls=vari, pred=pred, time_label=df_test_ori.dropna()["Time"], is_tune, val_outfile, test_outfile)
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ from sklearn.metrics import explained_variance_score, r2_score, mean_squared_err
 import matplotlib
 from matplotlib.lines import Line2D
 from matplotlib import pyplot as plt
+import sys
 matplotlib.use('TkAgg')
 
 
@@ -28,7 +29,7 @@ def display_metrics(results):
     r2_train = r2_f(results["train_act"], results["train_pred"])
     rmse_train = rmse(results["train_act"], results["train_pred"])
     mape_train = mape(results["train_act"], results["train_pred"])
-    # print('R^2: ' + str(r2_train))
+    
     print('RMSE: ' + str(rmse_train))
     print('MAPE: ' + str(mape_train) + '%\n')
 
@@ -36,7 +37,7 @@ def display_metrics(results):
     r2_validate = r2_f(results["val_act"], results["val_pred"])
     rmse_validate = rmse(results["val_act"], results["val_pred"])
     mape_validate = mape(results["val_act"], results["val_pred"])
-    # print('R^2: ' + str(r2_validate))
+    
     print('RMSE: ' + str(rmse_validate))
     print('MAPE: ' + str(mape_validate) + '%\n')
 
@@ -44,7 +45,7 @@ def display_metrics(results):
     r2_test = r2_f(results["test_act"], results["test_pred"])
     rmse_test = rmse(results["test_act"], results["test_pred"])
     mape_test = mape(results["test_act"], results["test_pred"])
-    # print('R^2: ' + str(r2_test))
+    
     print('RMSE: ' + str(rmse_test))
     print('MAPE: ' + str(mape_test) + '%\n')
 
@@ -67,11 +68,10 @@ def values_graph():
         labels_list.append(res[val])
 
     labels_list = ['O3', 'TEMP', 'RELHUM', 'CO', 'NO', 'BC', 'OA', 'NH4', 'PAR', 'NOX', 'ETH', 'CH3OH', 'C2H6', 'SO4', 'NO3', 'TOL', 'AONE', 'OLET', 'XYL', 'ALD2']
-    print(labels_list)
-    print(sorted_vals)
+    labels_list = list(reversed(labels_list))
+    sorted_vals = list(reversed(sorted_vals))
     fig,ax = plt.subplots()
     plt.barh(labels_list,sorted_vals,height=0.5)
-    #plt.pie(sorted_vals,labels=labels_list, autopct=lambda p: '{:.2f}%'.format(p * sum(sorted_vals) / 100),shadow=True)
     plt.xlabel("F-Score Share (Percentage)")
     plt.xticks(np.arange(0,13,1))
     plt.plot([4,4],[-0.4,19.3], 'k-')
@@ -100,7 +100,6 @@ def marine_testing(results):
     r2_test= r2_f(results["test_act_marine"], results["test_pred_marine"])
     rmse_test = rmse(results["test_act_marine"], results["test_pred_marine"])
     mape_test = mape(results["test_act_marine"], results["test_pred_marine"])
-    #print('R^2: ' + str(r2_test))
     print('RMSE: ' + str(rmse_test))
     print('MAPE: ' + str(mape_test) + '%\n')
 
@@ -108,7 +107,6 @@ def marine_testing(results):
     r2_test= r2_f(results["test_act_cont"], results["test_pred_cont"])
     rmse_test = rmse(results["test_act_cont"], results["test_pred_cont"])
     mape_test = mape(results["test_act_cont"], results["test_pred_cont"])
-    #print('R^2: ' + str(r2_test))
     print('RMSE: ' + str(rmse_test))
     print('MAPE: ' + str(mape_test) + '%\n')
 
@@ -124,8 +122,8 @@ def display_plots(results):
     cur_time_chunk = [timestep[0]]
     cur_pred_chunk = [results["test_pred"][0]]
     cur_act_chunk = [results["test_act"][0]]
-    for i in range(len(timestep)-1):
-        if(timestep[i+1] > timestep[i] + 1):
+    for i in range(1,len(timestep)):
+        if(timestep[i] > timestep[i-1] + 1):
             timestep_chunks.append(cur_time_chunk)
             pred_chunks.append(cur_pred_chunk)
             act_chunks.append(cur_act_chunk)
@@ -183,11 +181,9 @@ def display_plots(results):
         plt.plot(timestep_chunks[i], pred_chunks[i],
                  color="blue", label='Predicted')
 
-    #plt.plot(timestep, results["test_act"], color="red", label='Observed')
-    #plt.plot(timestep, results["test_pred"], color="blue", label='Predicted')
     plt.plot([281, 281], [0, 100], 'k-')
     plt.plot([514, 514], [0, 100], 'k-')
-    # plt.title("Testing values")
+
     plt.xlabel("Time")
     plt.rcParams['text.usetex'] = True
     plt.ylabel('Mixing State ' + r'$\chi$')
@@ -206,15 +202,103 @@ def display_plots(results):
     plt.xticks()
     plt.yticks()
 
-    custom_lines = [Line2D([0], [0], color="red", lw=4),
-                    Line2D([0], [0], color="blue", lw=4)]
-    plt.legend(custom_lines, ['Observed', 'Predicted'], loc=(0.777, 0.25))
-
-    #plt.legend(loc=(0.777, 0.25))
+    custom_lines = [Line2D([0], [0], color="red", lw=4),Line2D([0], [0], color="blue", lw=4)]
+    plt.legend(custom_lines, ['Observed','Predicted'], loc=(0.777, 0.25))
     plt.show()
 
+def usage():
+    usage_str = 'python evaluate.py path_to_validation_output.csv path_to_testing_output.csv [-om your_metrics_output_name.txt] [-ov your_validation_fig_name.csv] [-ot your_testing_fig_name.csv]'
+    print(usage_str)
+    sys.exit()
 
 def main():
+
+    val_outfile = ""
+    test_outfile = ""
+    metric_outfile = ""
+
+    file_obs = ""
+    file_val = ""
+    is_tune = False
+
+    if(len(sys.argv) not in [3,5,7,9]):
+        usage()
+
+    if(len(sys.argv) == 3):
+        file_val= str(sys.argv[1])
+        file_obs = str(sys.argv[2])
+
+    if(len(sys.argv) == 5):
+        file_val= str(sys.argv[1])
+        file_obs = str(sys.argv[2])
+        if(sys.argv[3] not in ['-om','-ov','-ot']):
+            usage()
+        if(sys.argv[3] == '-om'):
+            metric_outfile = sys.argv[4]
+        elif(sys.argv[3] == '-ov'):
+            val_outfile = sys.argv[4]
+        else:
+            test_outfile = sys.argv[4]
+        
+
+    if(len(sys.argv) == 7):
+        file_val= str(sys.argv[1])
+        file_obs = str(sys.argv[2])
+        if(sys.argv[3] not in ['-om','-ov','-ot'] or sys.argv[5] not in ['-om','-ov','-ot']):
+            usage()
+
+        if(sys.argv[3] == '-om'):
+            metric_outfile = sys.argv[4]
+            if(sys.argv[5] == '-ov'):
+                val_outfile = sys.argv[6]
+            else:
+                test_outfile = sys.argv[6]
+        elif(sys.argv[3] == '-ov'):
+            val_outfile = sys.argv[4]
+            if(sys.argv[5] == '-om'):
+                metric_outfile = sys.argv[6]
+            else:
+                test_outfile = sys.argv[6]
+        else:
+            test_outfile = sys.argv[4]
+            if(sys.argv[5] == '-ov'):
+                val_outfile = sys.argv[6]
+            else:
+                metric_outfile = sys.argv[6]
+
+
+    if(len(sys.argv) == 9):
+        file_val= str(sys.argv[1])
+        file_obs = str(sys.argv[2])
+        if(sys.argv[3] not in ['-om','-ov','-ot'] or sys.argv[5] not in ['-om','-ov','-ot'] or sys.argv[7] not in ['-om','-ov','-ot']):
+            usage()
+
+        if(sys.argv[3] == '-om'):
+            metric_outfile = sys.argv[4]
+            if(sys.argv[5] == '-ov'):
+                val_outfile = sys.argv[6]
+                test_outfile = sys.argv[8]
+            else:
+                test_outfile = sys.argv[6]
+                val_outfile = sys.argv[8]
+        elif(sys.argv[3] == '-ov'):
+            val_outfile = sys.argv[4]
+            if(sys.argv[5] == '-om'):
+                metric_outfile = sys.argv[6]
+                test_outfile = sys.argv[8]
+            else:
+                test_outfile = sys.argv[6]
+                metric_outfile = sys.argv[8]
+        else:
+            test_outfile = sys.argv[4]
+            if(sys.argv[5] == '-ov'):
+                val_outfile = sys.argv[6]
+                metric_outfile = sys.argv[8]
+            else:
+                metric_outfile = sys.argv[6]
+                val_outfile = sys.argv[8]
+
+
     file_train = "paper_train_res_800.txt"
     file_val = "paper_validation_res_800.txt"
     file_obs = "paper_test_res_800.txt"
