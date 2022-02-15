@@ -21,7 +21,7 @@ python model.py path_to_training_data your_validation_output_name.csv your_testi
 
 If you wish to run hyperparameter tuning yourself instead of using the values we found, you can do so with the -h option, so the command would be
 ```
-python -h model.py path_to_training_data your_validation_output_name.csv your_testing_output_name.csv
+python model.py -h path_to_training_data your_validation_output_name.csv your_testing_output_name.csv
 ```
 To evaluate the results, simply run 
 ```
