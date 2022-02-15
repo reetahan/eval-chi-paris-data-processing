@@ -16,10 +16,10 @@ to have the raw observational data processing script generate the final observed
 # **How To Run the Model and Evaluate Results**
 Assuming you have generated training data in a singular CSV file, you can run training, validation and testing by running
 ```
-python model.py path_to_training_data [-h] [-ov your_validation_output_name.csv] [-ot your_testing_output_name.csv]
+python model.py path_to_training_data  path_to_validation_data path_to_testing_data  [-h] [-ov your_validation_output_name.csv] [-ot your_testing_output_name.csv]
 ```
 
-If you wish to run hyperparameter tuning yourself instead of using the values we found, you can do so with the -h option. You can use the -ov option and -ot option, to add a validation output filename and testing output filename of your choice, respectively, if you do not want the default. You MUST provide the path to your training data file (make sure it is contained in a singular CSV!)
+If you wish to run hyperparameter tuning yourself instead of using the values we found, you can do so with the -h option. You can use the -ov option and -ot option, to add a validation output filename and testing output filename of your choice, respectively, if you do not want the default. You MUST provide the paths to your training, validation, and testing data file (make sure each is contained in a singular CSV!)
 
 To evaluate the results, simply run 
 ```
