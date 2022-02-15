@@ -6,12 +6,11 @@ import sys
 import getopt
 
 
-def main(argv):
+def main():
     outfile = "OBSERVATION_PROCESSING_OUTPUT.csv"
-    
-    if(len(sys.argv) != 1 or len(sys.argv) != 3):
+    if(len(sys.argv) == 2 or len(sys.argv) > 3):
         usage()
-    if(len(sys.argv) == 3):
+    if(len(sys.argv) == 2):
         if(sys.argv[1] != '-o'):
             usage()
         outfile = str(sys.argv[2])

@@ -249,7 +249,7 @@ def ml_workflow_grid_search(df_train, df_validate, df_test, features_ls, pred, t
 
 
 
-def main(argv):
+def main():
 
     val_outfile = "VALIDATION_OUTPUT.txt"
     test_outfile = "TESTING_OUTPUT.txt"
@@ -346,7 +346,7 @@ def main(argv):
     df_train_ori = pd.read_csv(training_data_file)
 
     ml_workflow_grid_search(df_train=df_train_ori.dropna(), df_validate=df_validate_ori.dropna(), df_test=df_test_ori.dropna(),
-                            features_ls=vari, pred=pred, time_label=df_test_ori.dropna()["Time"], is_tune, val_outfile, test_outfile)
+                            features_ls=vari, pred=pred, time_label=df_test_ori.dropna()["Time"], is_tune=is_tune, val_outfile=val_outfile, test_outfile=test_outfile)
 
 
 if __name__ == '__main__':
