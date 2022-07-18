@@ -231,6 +231,14 @@ def write_result(text, time_rh, voc, aerosols, outfile):
             resultant.update(voc[record])
             resultant.update(aerosols[record])
             final_results[record] = resultant
+        else:
+            print(record)
+            if(record not in time_rh):
+                print('Time/RH missing!')
+            if(record not in voc):
+                print('VOC missing!')
+            if(record not in aerosols):
+                print('Aerosols missing!')
 
     flipped_dict = dict()
     for key in final_results['2010-02-11 08:00:00'].keys():
@@ -240,6 +248,7 @@ def write_result(text, time_rh, voc, aerosols, outfile):
             flipped_dict[metric][record] = final_results[record][metric]
 
     df = pd.DataFrame(flipped_dict)
+    print(df["chi_abd"])
     df.to_csv(outfile)
     print('Data Normalization Complete!')
 
