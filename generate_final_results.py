@@ -6,49 +6,93 @@ from sklearn.metrics import explained_variance_score, r2_score, mean_squared_err
 import numpy as np
 import xlrd
 import pandas as pd
+import copy
 import datetime
+import sys
 from sklearn.neighbors import KernelDensity
 
-def validation_heatmaps(results,sname):
-    
-    print("Validation Results\n========\n")
-    rmse_test = rmse(results["val_act"], results["val_pred"])
-    mape_test = mape(results["val_act"], results["val_pred"])
+def validation_heatmaps(results_1,results_2,sname):
 
-    print('RMSE: ' + str(rmse_test))
-    print('MAPE: ' + str(mape_test) + '%\n')
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.set_figheight(10)
+    fig.set_figwidth(20)
 
-    fig, ax = plt.subplots()
-    
     the_range = np.array([[0,100],[0,100]])
-    
-    colors = ["#ffffff", "#9fc5e8", "#6fa8dc", "#3d85c6", "#0b5394","#073763","#133a5d","#010f1c"]
+    colors = ["#c8dbec", "#9fc5e8", "#7db2e0", "#6fa8dc","#559ddc","#4d98da", "#3d85c6", "#236cad"]
     cmap= clrs.ListedColormap(colors)
+    
 
-    h,xedges,yedges,img = plt.hist2d(results["val_act"], results["val_pred"], bins=(100, 100), 
-        range=the_range, cmap=cmap)
-    bounds = [0,1]
-    interval = int((np.max(h) - 1) / (len(colors) - 1))
-    for i in range(1+interval,int(np.max(h)),interval):
+    label = "(a)"
+    print("Validation Results\n========\n")
+    rmse_test = rmse(results_1["val_act"], results_1["val_pred"])
+    mape_test = mape(results_1["val_act"], results_1["val_pred"])
+    rmse_str = 'RMSE: ' + str(round(rmse_test,2)) + "%\n"
+    mape_str = 'MAPE: ' + str(round(mape_test,2)) + "%"
+    print(rmse_str)
+    print(mape_str)
+
+    
+    h,xedges,yedges,img = ax1.hist2d(results_1["val_act"], results_1["val_pred"], bins=(100, 100), range=the_range, cmap=cmap,cmin=0.9)
+    bounds = []
+    interval = int((np.nanmax(h) - 1) / (len(colors) - 1))
+    for i in range(1,int(np.nanmax(h)),interval):
         bounds.append(i)
     norm = clrs.BoundaryNorm(bounds, cmap.N)
-    plt.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap),label="Number of Points",orientation="horizontal",fraction=0.046, pad=0.2)
-
-    fig.set_figheight(10)
-    fig.set_figwidth(10)
+    plt.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap),label="Number of Points", ax=ax1, orientation="horizontal",fraction=0.041, pad=0.13)
+    
+   
     plt.rcParams['text.usetex'] = True
-    plt.ylabel('Prediction Mixing State Index ' + r'$\chi$' + ' / %')
-    plt.xlabel('Reference Mixing State Index ' + r'$\chi$' + ' / %')
+    ax1.set_ylabel('Predicted Mixing State Index ' + r"$\chi_{\rm pred}$" + ' / %')
+    ax1.set_xlabel('Mixing State Index ' + r"$\chi_{\rm ref}$" + ' / %')
     plt.rcParams['text.usetex'] = False
+    ax1.text(0.05, 0.05, rmse_str + mape_str, transform=ax1.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    ax1.text(0.05, 0.9, label, transform=ax1.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    ax1.set_xlim(0, 100)
+    ax1.set_ylim(0, 100)
+    ax1.set_aspect('equal', adjustable='box')
+    ax1.grid(True)
 
-    plt.xlim(0, 100)
-    plt.ylim(0, 100)
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.xticks()
-    plt.yticks()
-    plt.savefig(sname,bbox_inches='tight')
-    plt.grid(True)
+
+
+    label = "(b)"
+    
+    print("Validation Results\n========\n")
+    rmse_test = rmse(results_2["val_act"], results_2["val_pred"])
+    mape_test = mape(results_2["val_act"], results_2["val_pred"])
+    rmse_str = 'RMSE: ' + str(round(rmse_test,2)) + "%\n"
+    mape_str = 'MAPE: ' + str(round(mape_test,2)) + "%"
+    print(rmse_str)
+    print(mape_str)
+
+    #colors = ["#ffffff", "#9fc5e8", "#6fa8dc", "#4d98da", "#1b65a6", "#073763","#133a5d","#010f1c"]
+    colors = ["#9fc5e8", "#7db2e0","#559ddc","#4d98da", "#3d85c6", "#1b65a6", "#0b5394","#073763","#133a5d","#010f1c"]
+    cmap = clrs.ListedColormap(colors)
+
+    h,xedges,yedges,img = ax2.hist2d(results_2["val_act"], results_2["val_pred"], bins=(100, 100), range=the_range, cmap=cmap,cmin=0.9)
+
+    bounds = []
+    interval = int((np.nanmax(h) - 1) / (len(colors) - 1))
+    for i in range(1,int(np.nanmax(h)),interval):
+        bounds.append(i)
+    norm = clrs.BoundaryNorm(bounds, cmap.N)
+    plt.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap),label="Number of Points", ax=ax2, orientation="horizontal",fraction=0.041, pad=0.13)
+   
+
+    plt.rcParams['text.usetex'] = True
+    ax2.set_ylabel('Predicted Mixing State Index ' + r"$\chi_{\rm pred}$" + ' / %')
+    ax2.set_xlabel('Mixing State Index ' + r"$\chi_{\rm ref}$" + ' / %')
+    plt.rcParams['text.usetex'] = False
+    ax2.text(0.05, 0.05, rmse_str + mape_str, transform=ax2.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    ax2.text(0.05, 0.9, label, transform=ax2.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    ax2.set_xlim(0, 100)
+    ax2.set_ylim(0, 100)
+    ax2.set_aspect('equal', adjustable='box')
+    ax2.grid(True)
+
+
+    plt.savefig(sname,bbox_inches='tight', dpi=275)
     plt.show()
+
 
 def rmse(y_ori, y_pred):
     return mean_squared_error(y_ori, y_pred, squared=False)
@@ -145,29 +189,143 @@ def get_times(miss):
 
     return timestamps, original_timestep, new_timestep
 
-def tseries_plots(total_results,miss,marine,title,obs_loc,sname):
+def tseries_plots_nonprim(total_results,miss,marine,obs_loc,sname,count):
 
-    plt.figure(figsize=(16.18, 10))
-    plt.grid()
-    #plt.title(title)
+    
+    fig, axs = plt.subplots(count)
+    fig.set_figheight(58)
+    fig.set_figwidth(45.18)
     plt.xlabel("Date")
-    plt.rcParams['text.usetex'] = True
-    plt.ylabel('Mixing State Index ' + r'$\chi$' + ' / %')
-    plt.rcParams['text.usetex'] = False
     locs, labels = plt.xticks()
-    #interval = (locs[len(locs)-1] - locs[0])/(len(locs)-2)
 
     new_locs = []
     for i in range(2, 28, 5):
         new_locs.append(i*24)
     plt.xticks(new_locs, ['17th Jan', '22th Jan',
                '27nd Jan', '1st Feb', '6th Feb', '11th Feb'])
-    if(marine):
-        new_locs = []
-        for i in range(0,11,2):
-            new_locs.append(i*24)
-        plt.xticks(new_locs, ['28th Jan', '30th Jan',
-                   '1st Feb', '3rd Feb', '5th Feb', '7th Feb'])
+    
+    
+    plt.xticks()
+    letters = ['(a)', '(b)', '(c)']
+
+    for i in range(count):
+        axs[i].grid()
+        axs[i].set_ylim(20, 80)
+
+        plt.rcParams['text.usetex'] = True
+        axs[i].set_ylabel('Mixing State Index ' + r'$\chi$' + ' / %')
+        plt.rcParams['text.usetex'] = False
+
+        if(marine[i]):
+            new_locs = []
+            for n in range(0,11,2):
+                new_locs.append(n*24)
+            axs[i].set_xticks(new_locs, ['28th Jan', '30th Jan',
+                       '1st Feb', '3rd Feb', '5th Feb', '7th Feb'])
+
+        first = True
+
+        for results in total_results[i]:
+            timestamps, original_timestep, new_timestep = get_times(miss[i][results])
+            cleansed_observed = []
+            predictions = []
+            predictions_cont = []
+            cleansed_observed_cont = []
+
+            j = 0
+            for m in range(len(timestamps)):
+                if(m in new_timestep):
+                    cleansed_observed.append(total_results[i][results]["test_act"][j])
+                    predictions.append(total_results[i][results]["test_pred"][j])
+                    predictions_cont.append(total_results[i][results]["test_pred"][j])
+                    cleansed_observed_cont.append(total_results[i][results]["test_act"][j])
+                    j = j + 1
+                else:
+                    cleansed_observed.append(np.NaN)
+                    predictions.append(np.NaN)
+                    cleansed_observed_cont.append(np.NaN)
+                    predictions_cont.append(np.NaN)
+
+
+            # Testing
+            if(marine[i]):
+                cont_ts = list(original_timestep[:314]) + list(original_timestep[555:])
+                cleansed_observed_cont = list(cleansed_observed[:314]) + list(cleansed_observed[555:])
+                predictions_cont = list(predictions[:314]) + list(predictions[555:])
+                original_timestep = original_timestep[314:555]
+                original_timestep = [x - original_timestep[0] for x in original_timestep]
+                cleansed_observed= cleansed_observed[314:555]
+                predictions = predictions[314:555]
+
+            if(first):
+                axs[i].plot(original_timestep, cleansed_observed,color='blue', label='Observed',linewidth=4.4)
+                axs[i].annotate("Observed", xycoords='axes fraction',xy=obs_loc[i][0], xytext=obs_loc[i][1],
+                color='blue',textcoords='axes fraction',arrowprops=dict(arrowstyle="->",connectionstyle="arc3"))
+                first = False
+
+            axs[i].plot(original_timestep, predictions, color=total_results[i][results]["color"], 
+                label=total_results[i][results]["label"],linewidth=4.4)
+            axs[i].annotate(total_results[i][results]["label"], xycoords='axes fraction',xy=total_results[i][results]["label_loc"][0], 
+                xytext=total_results[i][results]["label_loc"][1],color= total_results[i][results]["color"],
+                textcoords='axes fraction', arrowprops=dict(arrowstyle="->",connectionstyle="arc3"))
+
+            nan_idxs = np.argwhere(np.isnan(predictions))
+            predictions = [x for x in predictions if np.isnan(x) == False]
+            cleansed_observed = np.delete(cleansed_observed, nan_idxs)
+            nan_idxs_cont = np.argwhere(np.isnan(predictions_cont))
+            predictions_cont = [x for x in predictions_cont if np.isnan(x) == False]
+            cleansed_observed_cont = np.delete(cleansed_observed_cont, nan_idxs_cont)
+
+            print(results)
+            print("Results\n========\n")
+            if(marine[i]):
+                print('Marine')
+            if(miss):
+                print('Miss')
+            rmse_test = round(rmse(predictions, cleansed_observed),2)
+            mape_test = round(mape(predictions, cleansed_observed),2)
+
+            rmse_str = 'RMSE: ' + str(rmse_test) + "%\n"
+            mape_str = 'MAPE: ' + str(mape_test) + "%"
+            print(rmse_str)
+            print(mape_str)
+            plt.text(0.02, 0.9, letters[i], transform=axs[i].transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=1.0))
+
+           
+            print('Just Continental')
+            rmse_test = rmse(predictions_cont, cleansed_observed_cont)
+            mape_test = mape(predictions_cont, cleansed_observed_cont)
+
+            print('RMSE: ' + str(rmse_test))
+            print('MAPE: ' + str(mape_test) + '%\n')
+
+            if(i != (count -1)):
+                plt.setp(axs[i].get_xticklabels(), visible=False)
+
+  
+    plt.savefig(sname,bbox_inches='tight',dpi=275)
+    plt.show()
+
+def tseries_plots_prim(total_results,miss,obs_loc,sname):
+
+    rmses = []
+    mapes = []
+    fig, ax = plt.subplots()
+    fig.set_figheight(10)
+    fig.set_figwidth(16.18)
+    plt.grid()
+    plt.xlabel("Date")
+    plt.rcParams['text.usetex'] = True
+    plt.ylabel('Mixing State Index ' + r'$\chi$' + ' / %')
+    plt.rcParams['text.usetex'] = False
+    locs, labels = plt.xticks()
+
+    new_locs = []
+    for i in range(2, 28, 5):
+        new_locs.append(i*24)
+    plt.xticks(new_locs, ['17th Jan', '22th Jan',
+               '27nd Jan', '1st Feb', '6th Feb', '11th Feb'])
+    
     plt.ylim(20, 80)
     plt.xticks()
     plt.yticks()
@@ -195,16 +353,6 @@ def tseries_plots(total_results,miss,marine,title,obs_loc,sname):
                 predictions_cont.append(np.NaN)
 
 
-        # Testing
-        if(marine):
-            cont_ts = list(original_timestep[:314]) + list(original_timestep[555:])
-            cleansed_observed_cont = list(cleansed_observed[:314]) + list(cleansed_observed[555:])
-            predictions_cont = list(predictions[:314]) + list(predictions[555:])
-            original_timestep = original_timestep[314:555]
-            original_timestep = [x - original_timestep[0] for x in original_timestep]
-            cleansed_observed= cleansed_observed[314:555]
-            predictions = predictions[314:555]
-
         if(first):
             plt.plot(original_timestep, cleansed_observed,color='blue', label='Observed')
             plt.annotate("Observed", xycoords='axes fraction',xy=obs_loc[0], xytext=obs_loc[1],
@@ -216,6 +364,16 @@ def tseries_plots(total_results,miss,marine,title,obs_loc,sname):
             xytext=total_results[results]["label_loc"][1],color= total_results[results]["color"],
             textcoords='axes fraction', arrowprops=dict(arrowstyle="->",connectionstyle="arc3"))
 
+
+        cont_ts = list(original_timestep[:314]) + list(original_timestep[555:])
+        cleansed_observed_cont = list(cleansed_observed[:314]) + list(cleansed_observed[555:])
+        predictions_cont = list(predictions[:314]) + list(predictions[555:])
+        original_timestep = original_timestep[314:555]
+        original_timestep = [x - original_timestep[0] for x in original_timestep]
+        cleansed_observed= cleansed_observed[314:555]
+        predictions = predictions[314:555]
+
+
         nan_idxs = np.argwhere(np.isnan(predictions))
         predictions = [x for x in predictions if np.isnan(x) == False]
         cleansed_observed = np.delete(cleansed_observed, nan_idxs)
@@ -223,57 +381,87 @@ def tseries_plots(total_results,miss,marine,title,obs_loc,sname):
         predictions_cont = [x for x in predictions_cont if np.isnan(x) == False]
         cleansed_observed_cont = np.delete(cleansed_observed_cont, nan_idxs_cont)
 
-        print(results)
         print("Results\n========\n")
-        if(marine):
-            print('Marine')
-        if(miss):
-            print('Miss')
-        rmse_test = rmse(predictions, cleansed_observed)
-        mape_test = mape(predictions, cleansed_observed)
 
-        print('RMSE: ' + str(rmse_test))
-        print('MAPE: ' + str(mape_test) + '%\n')
+        rmse_test = round(rmse(predictions, cleansed_observed),2)
+        mape_test = round(mape(predictions, cleansed_observed),2)
+        
+        rmses.append(rmse_test)
+        mapes.append(mape_test)
 
-        print('Just Continental')
+        #print('Just Continental')
         rmse_test = rmse(predictions_cont, cleansed_observed_cont)
         mape_test = mape(predictions_cont, cleansed_observed_cont)
-
         print('RMSE: ' + str(rmse_test))
         print('MAPE: ' + str(mape_test) + '%\n')
 
-    
-    #plt.legend(loc=(0.777, 0.095))
-    
-    plt.savefig(sname,bbox_inches='tight')
+    plt.axvline(x=314)
+    plt.axvline(x=515)
+
+    rmse_str = 'RMSE (XGB): ' + str(round(rmses[0],2)) + "%\n" + 'RMSE (AML): ' + str(round(rmses[0],2)) + "%\n"
+    mape_str = 'MAPE (XGB): ' + str(round(mapes[0],2)) + "%\n" + 'MAPE (AML): ' + str(round(mapes[1],2)) + "%"
+    print(rmse_str)
+    print(mape_str)
+    #plt.text(0.02, 0.05, rmse_str + mape_str, transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=1))
+
+    plt.annotate("Continental", xycoords='axes fraction', xy=(0.15,1.05),color='purple')
+    plt.annotate("Marine", xycoords='axes fraction', xy=(0.55,1.05),color='darkgreen')
+    plt.annotate("Continental", xycoords='axes fraction', xy=(0.8,1.05),color='purple')
+    plt.savefig(sname,bbox_inches='tight', dpi=275)
     plt.show()
 
-def kdes(total_results, marine, title, kde_obs_loc,sname):
+def kdes(total_results, marine, kde_obs_loc,sname, miss):
 
     plt.figure(figsize=(16.18, 10))
-    plt.rcParams['text.usetex'] = True
-    plt.xlabel("Distribution of Mixing State Index " + r'$\chi$' + ' / \%')
-    plt.rcParams['text.usetex'] = False
     plt.ylabel("Probability Density")
-    plt.title(title)
 
     kde_res = {}
-    legend_list = ["Observed"]
-    color_list = ["blue"]
+    legend_list = []
+    color_list = []
+
 
     for result in total_results:
         for section in total_results[result]:
+
+            timestamps, original_timestep, new_timestep = get_times(miss[result])
+            cleansed_observed = []
+            predictions = []
+            predictions_cont = []
+            cleansed_observed_cont = []
+            j = 0
+            for i in range(len(timestamps)):
+                if(i in new_timestep):
+                    cleansed_observed.append(total_results[result]["test_act"][j])
+                    predictions.append(total_results[result]["test_pred"][j])
+                    predictions_cont.append(total_results[result]["test_pred"][j])
+                    cleansed_observed_cont.append(total_results[result]["test_act"][j])
+                    j = j + 1
+                else:
+                    cleansed_observed.append(np.NaN)
+                    predictions.append(np.NaN)
+                    cleansed_observed_cont.append(np.NaN)
+                    predictions_cont.append(np.NaN)
+
             if(section == "test_act"):
-                kde_res["observed"] = total_results[result]["test_act"]
+                kde_res["observed"] = np.array(cleansed_observed)
                 if(marine):
-                    kde_res["observed"] = total_results[result]["test_act"][314:555]
+                    kde_res["observed"] = np.array(cleansed_observed[314:555])
+                nan_idxs = np.argwhere(np.isnan(kde_res["observed"]))
+                kde_res["observed"] = np.delete(kde_res["observed"], nan_idxs)
+
+                legend_list.append("Observed")
+                color_list.append("blue")
             if(section == "test_pred"):
+
                 legend_list.append(total_results[result]["label"])
                 color_list.append(total_results[result]["color"])
-                kde_res[total_results[result]["label"]] = total_results[result]["test_pred"]
+                kde_res[total_results[result]["label"]] = np.array(predictions)
                 if(marine):
-                    kde_res[total_results[result]["label"]] = total_results[result]["test_pred"][314:555]
-
+                    kde_res[total_results[result]["label"]] = np.array(predictions[314:555])
+                
+                nan_idxs = np.argwhere(np.isnan(kde_res[total_results[result]["label"]]))
+                kde_res[total_results[result]["label"]] = np.delete(kde_res[total_results[result]["label"]], nan_idxs)
+               
             if(section == "test_act"):
                 plt.annotate("Observed", xycoords='axes fraction',xy=kde_obs_loc[0], xytext=kde_obs_loc[1],
                 color='blue',textcoords='axes fraction',arrowprops=dict(arrowstyle="->",connectionstyle="arc3"))
@@ -284,6 +472,7 @@ def kdes(total_results, marine, title, kde_obs_loc,sname):
                     textcoords='axes fraction', arrowprops=dict(arrowstyle="->",connectionstyle="arc3"))
 
     color_idx = 0
+
     for res in kde_res:
 
         cur_kde = KernelDensity(kernel='gaussian',bandwidth=2.5)
@@ -297,94 +486,74 @@ def kdes(total_results, marine, title, kde_obs_loc,sname):
         plt.fill_between(x_axis,np.exp(scores),alpha=0.7,color=color_list[color_idx])
         color_idx = color_idx + 1
 
-        
-    plt.savefig(sname,bbox_inches='tight')
-    #plt.legend(tuple(legend_list))
+
+    plt.grid()
+    plt.xlabel('Mixing State Index ' + r'$\chi$' + ' / %')    
+    plt.savefig(sname,bbox_inches='tight', dpi=275)
     plt.show()
 
-
 def main():
-    
-    plt.rcParams.update({'font.size': 18})
 
     final_results = {}
-    with open("PAPER_RESULTS.pkl","rb") as pickle_file:
+    with open("NEW_PAPER_RESULTS.pkl","rb") as pickle_file:
         final_results = pickle.load(pickle_file)
+    print(final_results.keys())
 
-    # Section 3.1
-    print('Primary Result')
+
+
+
+    # Section 3.2
+    plt.rcParams.update({'font.size': 24})
     total_results = {}
     miss = {}
     total_results["missingincluded"] = final_results["missingincluded"]
     total_results["missingincluded"]["color"] = "orange"
     total_results["missingincluded"]["label"] = "XGBoost"
-    total_results["missingincluded"]["label_loc"] = [(0.5,0.5),(0.57,0.3)]
-    total_results["missingincluded"]["kde_label_loc"] = [(0.62,0.55),(0.73,0.7)]
+    total_results["missingincluded"]["label_loc"] = [(0.66,0.79),(0.61,0.9)]
+    total_results["missingincluded"]["kde_label_loc"] =  [(0.4,0.60),(0.28,0.69)]
     total_results["automl_missingincluded"] = final_results["automl_missingincluded"]
     total_results["automl_missingincluded"]["color"] = "gray"
     total_results["automl_missingincluded"]["label"] = "AutoML"
-    total_results["automl_missingincluded"]["label_loc"] = [(0.50,0.60),(0.55,0.8)]
-    total_results["automl_missingincluded"]["kde_label_loc"] = [(0.56,0.65),(0.65,0.8)]
-    obs_loc_ts = [(0.46,0.38),(0.39,0.17)]
-    kde_obs_loc_ts = [(0.82,0.33),(0.8,0.6)]
+    total_results["automl_missingincluded"]["label_loc"] = [(0.39,0.92),(0.24,0.92)]
+    total_results["automl_missingincluded"]["kde_label_loc"] = [(0.46,0.73),(0.30,0.8)]
+    obs_loc_ts = [(0.55,0.85),(0.41,0.92)]
+    kde_obs_loc_ts = [(0.22,0.34),(0.12,0.45)]
     miss["missingincluded"] = True
-    miss["automl_missingincluded"] = True
+    miss["automl_missingincluded"] =  True
 
+    validation_heatmaps(total_results["missingincluded"],total_results["automl_missingincluded"],"4_test_1000edit.pdf")
+    tseries_plots_prim(total_results,miss,obs_loc_ts,"4_prim_tseries_1000edit.pdf")
+    kdes(total_results, True, kde_obs_loc_ts,"4_prim_kdes_1000edit.pdf",miss)
 
-    validation_heatmaps(total_results["missingincluded"],"3_2_val_xgb.png")
-    validation_heatmaps(total_results["automl_missingincluded"],"3_2_val_aml.png")
-    tseries_plots(total_results,miss,True,"Predicted vs Observed",obs_loc_ts,"3_2_tseries.png")
-    kdes(total_results, True, "Predicted vs Observed", kde_obs_loc_ts,"3_2_val_kdes.png")
+    miss_arr = []
+    marine_arr = []
+    obs_loc_arr = []
+    total_total_results = []
     
 
-    # Section 3.2
-    total_results = {}
-    miss = {}
-    total_results["missingincluded"] = final_results["missingincluded"]
-    total_results["missingincluded"]["color"] = "orange"
-    total_results["missingincluded"]["label"] = "Missing Included"
-    total_results["missingincluded"]["label_loc"] = [(0.59,0.6),(0.57,0.3)]
+    plt.rcParams.update({'font.size': 53})
 
-    total_results["orig"] = final_results["orig"]
-    total_results["orig"]["color"] = "gray"
-    total_results["orig"]["label"] = "Missing Excluded"
-    total_results["orig"]["label_loc"] = [(0.50,0.60),(0.55,0.8)]
-    miss["missingincluded"] = True
-    miss["orig"] = False
-    obs_loc_ts = [(0.46,0.38),(0.39,0.17)]
-    tseries_plots(total_results,miss,True,"Missing Feature Data Included vs Excluded", obs_loc_ts,"3_3_tseries.png")
-    
 
     # Section 3.3
     total_results = {}
     miss = {}
-    total_results["missingincluded"] = final_results["missingincluded"]
+    total_results["missingincluded"] = copy.deepcopy(final_results["missingincluded"])
     total_results["missingincluded"]["color"] = "orange"
-    total_results["missingincluded"]["label"] = "Varying Temp"
-    total_results["missingincluded"]["label_loc"] = [(0.7,0.55),(0.57,0.3)]
+    total_results["missingincluded"]["label"] = "Reference Prediction"
+    total_results["missingincluded"]["label_loc"] = [(0.73,0.8),(0.78,0.88)]
     total_results["xgbmissing_const"] = final_results["xgbmissing_const"]
     total_results["xgbmissing_const"]["color"] = "gray"
     total_results["xgbmissing_const"]["label"] = "Constant Temp"
-    total_results["xgbmissing_const"]["label_loc"] = [(0.60,0.80),(0.55,0.9)]
+    total_results["xgbmissing_const"]["label_loc"] = [(0.63,0.83),(0.66,0.94)]
     miss["missingincluded"] = True
     miss["xgbmissing_const"] = True
-    obs_loc_ts = [(0.46,0.38),(0.39,0.17)]
-    tseries_plots(total_results,miss,True,"Varying Daily Temperature in Training Data vs Constant Daily Temperature", obs_loc_ts,"3_4_tseries.png")
-    
+    obs_loc_ts = [(0.31,0.83),(0.38,0.88)]
 
-    # Section 3.4
-    total_results = {}
-    miss = {}
-    total_results["missingincluded"] = final_results["missingincluded"]
-    total_results["missingincluded"]["color"] = "orange"
-    total_results["missingincluded"]["label"] = "Predicted"
-    total_results["missingincluded"]["label_loc"] = [(0.66,0.59),(0.59,0.3)]
-    miss["missingincluded"] = True
-    obs_loc_ts = [(0.5,0.38),(0.39,0.17)]
-    tseries_plots(total_results,miss,False,"Predicted vs Observed (Entire Time Period)", obs_loc_ts,"3_1_tseries.png")
-    
-    
-    # Section 3.5
+    total_total_results.append(total_results)
+    miss_arr.append(miss)
+    marine_arr.append(True)
+    obs_loc_arr.append(obs_loc_ts)
+
     total_results = {}
     miss = {}
     total_results["xgbmissingincluded_200"] = final_results["xgbmissingincluded_200"]
@@ -399,28 +568,29 @@ def main():
     total_results["xgbmissingincluded_600"]["label_loc"] = [(0.52,0.67),(0.55,0.95)]
     total_results["xgbmissingincluded_600"]["kde_label_loc"] = [(0.38,0.84),(0.25,0.95)]
 
-    total_results["xgbmissingincluded_1000"] = final_results["xgbmissingincluded_1000"]
-    total_results["xgbmissingincluded_1000"]["color"] = "orange"
-    total_results["xgbmissingincluded_1000"]["label"] = "N=1000"
-    total_results["xgbmissingincluded_1000"]["label_loc"] = [(0.8,0.33),(0.8,0.1)]
-    total_results["xgbmissingincluded_1000"]["kde_label_loc"] = [(0.59,0.85),(0.63,0.95)]
+    total_results["xgbmissingincluded"] = final_results["missingincluded"]
+    total_results["xgbmissingincluded"]["color"] = "orange"
+    total_results["xgbmissingincluded"]["label"] = "Reference Prediction"
+    total_results["xgbmissingincluded"]["label_loc"] = [(0.8,0.33),(0.75,0.1)]
+    total_results["xgbmissingincluded"]["kde_label_loc"] = [(0.59,0.85),(0.63,0.95)]
 
     miss["xgbmissingincluded_200"] = True
     miss["xgbmissingincluded_600"] = True
-    miss["xgbmissingincluded_1000"] = True
+    miss["xgbmissingincluded"] = True
     obs_loc_ts = [(0.46,0.38),(0.39,0.17)]
     kde_obs_loc_ts = [(0.78,0.85),(0.7,0.95)]
 
-    tseries_plots(total_results,miss,True,"Effects of Varying Training Size", obs_loc_ts, "3_5_tseries.png")
-    kdes(total_results, True, "Effects of Varying Training Size", kde_obs_loc_ts, "3_5_kdes.png")
+    total_total_results.append(total_results)
+    miss_arr.append(miss)
+    marine_arr.append(True)
+    obs_loc_arr.append(obs_loc_ts)
 
-    # Section 3.6
     total_results = {}
     miss = {}
-    total_results["missingincluded"] = final_results["missingincluded"]
+    total_results["missingincluded"] = copy.deepcopy(final_results["missingincluded"])
     total_results["missingincluded"]["color"] = "orange"
-    total_results["missingincluded"]["label"] = "No Features Dropped"
-    total_results["missingincluded"]["label_loc"] = [(0.69,0.76),(0.59,0.95)]
+    total_results["missingincluded"]["label"] = "Reference Prediction"
+    total_results["missingincluded"]["label_loc"] = [(0.69,0.76),(0.49,0.95)]
 
     total_results["xgbmissing9"] = final_results["xgbmissing9"]
     total_results["xgbmissing9"]["color"] = "gray"
@@ -430,14 +600,23 @@ def main():
     total_results["xgbmissingextreme"] = final_results["xgbmissingextreme"]
     total_results["xgbmissingextreme"]["color"] = "purple"
     total_results["xgbmissingextreme"]["label"] = "Only Top 4 Features Kept"
-    total_results["xgbmissingextreme"]["label_loc"] = [(0.5,0.4),(0.55,0.1)]
+    total_results["xgbmissingextreme"]["label_loc"] = [(0.81,0.83),(0.73,0.95)]
 
     miss["missingincluded"] = True
     miss["xgbmissing9"] = True
     miss["xgbmissingextreme"] = True
-    obs_loc_ts = [(0.46,0.38),(0.39,0.17)]
+    obs_loc_ts = [(0.32,0.82),(0.38,0.93)]
 
-    tseries_plots(total_results,miss,True,"Effects of Dropping Features", obs_loc_ts,"3_6_tseries.png")
+    total_total_results.append(total_results)
+    miss_arr.append(miss)
+    marine_arr.append(True)
+    obs_loc_arr.append(obs_loc_ts)
+
+    sname = "4_sensitivity_analysis_1000edit.pdf"
+    count = 3
+    tseries_plots_nonprim(total_total_results,miss_arr,marine_arr,obs_loc_arr,sname,count)
+
+
 
 if __name__ == '__main__':
     main()
